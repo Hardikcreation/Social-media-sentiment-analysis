@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tweet Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Sticky Header -->
+    <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm p-3">
+        <div class="container-fluid">
+            <div
+                class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100">
+                <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                    <h4 class="font-weight-bold text-white">X Analysis</h4>
+                </a>
+                <form class="d-flex" method="GET" action="{{ url_for('tweet_analysis') }}">
+                    <input class="form-control me-sm-2 m-2" type="search" name="search" placeholder="Search hashtag"
+                        aria-label="Search" />
+                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row text-center stat-container">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card">
+                    <h3>Likes</h3>
+                    <p id="totalLikes" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card">
+                    <h3>Retweets</h3>
+                    <p id="totalRetweets" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card">
+                    <h3>Replies</h3>
+                    <p id="totalReplies" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card">
+                    <h3>Quotes</h3>
+                    <p id="totalQuotes" class="stat-value">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- Charts Section -->
+    <div id="chartBox" class="container-fluid">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card mb-3">
+                    <h6>Sentiment Bar Chart</h6>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="card mb-3">
+                    <h6>Hashtag Frequency</h6>
+                    <canvas id="hashtagBarChart"></canvas>
+                </div>
+                <div class="card mb-3">
+                    <h5>Hashtags List</h5>
+                    <ul class="list-group" id="hashtagList"></ul>
+                </div>
+                <div class="card mb-3">
+                    <div id="hashtagButtons" class="hashtag-container" style="margin-bottom: 15px;">
+                        <h3>Likes Analysis</h3>
+                        <canvas id="lineChart" style="width: 400px; height: 300px;"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tweet Activity Section -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow scroll">
+                    <h5>Tweet Activity</h5>
+                    <ul class="list-group">
+                        {% for tweet in tweets %}
+                        <li class="list-group-item mb-3">
+                            <div class="d-flex flex-column flex-md-row align-items-start">
+                                {% if tweet.media_urls %}
+                                <div class="media-container me-md-3 mb-2">
+                                    {% set is_video = false %}
+                                    {% for url in tweet.media_urls.split(',') %}
+                                    {% if 'video' in url %}
+                                    {% set is_video = true %}
+                                    {% endif %}
+                                    {% endfor %}
+
+                                    {% if is_video %}
+                                    <blockquote class="twitter-tweet">
+                                        <a href="https://twitter.com/i/status/{{ tweet.id }}"></a>
+                                    </blockquote>
+                                    {% else %}
+                                    {% for url in tweet.media_urls.split(',') %}
+                                    <img src="{{ url.strip() }}" alt="tweet media" class="tweet-image" />
+                                    {% endfor %}
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <div class="tweet-content">
+                                    <div class="mb-2">
+                                        <strong>{{ tweet.created_time.strftime('%Y-%m-%d %H:%M:%S') }}</strong><br>
+                                        <strong>Author:</strong> {{ tweet.author_id }}<br>
+                                        <strong>Hashtag:</strong> {{ tweet.hashtag }}<br>
+                                        <strong>Likes:</strong> {{ tweet.likes }} |
+                                        <strong>Retweets:</strong> {{ tweet.retweets }} |
+                                        <strong>Replies:</strong> {{ tweet.replies }} |
+                                        <strong>Quotes:</strong> {{ tweet.quotes }}<br>
+                                        <strong>Sentiment:</strong>
+                                        <span class="badge 
+                                            {% if tweet.sentiment == 'Positive' %}badge-success
+                                            {% elif tweet.sentiment == 'Negative' %}badge-danger
+                                            {% else %}badge-secondary
+                                            {% endif %}">{{ tweet.sentiment }}</span>
+                                    </div>
+                                    <p>{{ tweet.text }}</p>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Footer -->
+
+    <footer class="bg-dark text-white pt-4 pb-3 mt-5" style='background:linear-gradient(135deg, #070707, #000000)'>
+        <div class="container text-left text-md-start">
+            <div class="row">
+
+                <!-- About -->
+                <div class="col-md-4 mb-3">
+                    <h5>About</h5>
+                    <p>We provide real-time sentiment analysis on social media data. Powered by AI & multilingual
+                        support.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-md-4 mb-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-white text-decoration-none">Home</a></li>
+                        <li><a href="/dashboard" class="text-white text-decoration-none">Facebook Dashboard</a></li>
+                        <li><a href="/tweets" class="text-white text-decoration-none">Twitter Dashboard</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="col-md-4 mb-3">
+                    <h5>Contact</h5>
+                    <p><i class="bi bi-envelope"></i> bscdcl@smartbhopal.city</p>
+                    <p><i class="bi bi-phone"></i> +91 9109190390</p>
+                </div>
+
+            </div>
+
+            <hr class="bg-white">
+
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 Sentiment Analytics</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Data from Flask -->
+    <script>
+        const sentimentData = {{ sentiment_data | tojson }};
+        const tweets = {{ serialized_tweets | tojson }};
+        const hashtagLabels = {{ hashtag_labels | tojson }};
+        const hashtagCounts = {{ hashtag_counts | tojson }};
+        const timeLabels = {{ time_labels | tojson }};
+        const timeCounts = {{ time_counts | tojson }};
+    </script>
+
+    <!-- Custom Script -->
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+</body>
+
+</html>

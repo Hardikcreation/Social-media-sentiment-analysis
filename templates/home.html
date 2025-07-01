@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Social Media Sentiment Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/home.css">
+    <style>
+        /* Custom styles that Tailwind can't easily handle */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .platform-card {
+            border-top-width: 4px;
+            border-top-style: solid;
+        }
+
+        .facebook-card {
+            border-top-color: #1877f2;
+        }
+
+        .twitter-card {
+            border-top-color: #1da1f2;
+        }
+
+        .instagram-card {
+            border-top-color: #e1306c;
+        }
+
+        .keyword-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+            font-size: 0.85rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* For the gradient backgrounds */
+        .gradient-nav {
+            background: linear-gradient(135deg, #070707, #000000);
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #4361ee, #2a20e8);
+        }
+
+        .gradient-footer {
+            background: linear-gradient(135deg, #070707, #000000);
+        }
+
+        /* Chart.js font settings */
+        .chartjs-render-monitor {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col min-h-screen bg-black-80">
+    <nav class="navbar gradient-nav text-white shadow-md py-3">
+        <div class="container mx-auto px-4 flex flex-wrap items-center justify-between">
+            <a class="navbar-brand flex items-center text-xl font-semibold" href="{{ url_for('home') }}">
+                <i class="fas fa-chart-line mr-2"></i>Sentiment Analysis
+            </a>
+
+            <div class="flex items-center overflow-auto space-x-3 mx-2" style="flex-wrap: nowrap;">
+                <a href="{{ url_for('dashboard') }}"
+                    class="btn bg-black-400 hover:bg-blue-700  text-white px-4 py-2 rounded-full font-medium transition">
+                    Facebook</a>
+                <a href="{{ url_for('tweet_analysis') }}"
+                    class="btn bg-black-400 hover:bg-blue-500 text-white px-4 py-2 rounded-full  font-medium transition">
+                    X(Tweeter)</a>
+                <a
+                    class="btn bg-black-400 hover:bg-blue-500 text-white px-4 py-2 rounded-full  font-medium transition">Instagram</a>
+            </div>
+
+            <div class="flex items-center">
+                <span class="text-white mr-4">
+                    Welcome, {{ username }}!
+                </span>
+                <a class="text-white hover:text-gray-300" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <header class="gradient-header text-white py-8 mb-8 rounded-b-xl">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-2/3 mb-4 md:mb-0">
+                    <h1 class="text-2xl md:text-3xl font-bold mb-2 flex items-center">
+                        <i class="fas fa-chart-pie mr-2"></i> Real-time Social Media Sentiment Analysis
+                    </h1>
+                    <p class="text-lg opacity-90">Monitor and analyze sentiment trends across multiple social media
+                        platforms with our comprehensive dashboard.</p>
+                </div>
+                <div class="md:w-1/3 text-right">
+                    <a class="btn bg-white hover:bg-gray-100 text-blue-600 px-6 py-2 rounded-full font-medium inline-block"
+                        href="#dashboard">Get Started Now</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 flex-grow">
+        <!-- First Row: Overview Cards -->
+        <div class="flex flex-col lg:flex-row gap-6 mb-6">
+            <!-- Global Sentiment Overview -->
+            <div class="lg:w-2/3">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <span class="font-semibold">Global Sentiment Overview</span>
+                        <div class="bg-blue-600 text-white text-xs px-2 py-1 rounded">Live</div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="text-center">
+                                <div class="stat-number text-blue-500">{{ positive_pct }}%</div>
+                                <div class="text-gray-500">Positive</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: {{ positive_pct }}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="stat-number">{{ neutral_pct }}%</div>
+                                <div class="text-gray-500">Neutral</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                    <div class="bg-gray-500 h-2 rounded-full" style="width: {{ neutral_pct }}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="stat-number text-red-500">{{ negative_pct }}%</div>
+                                <div class="text-gray-500">Negative</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                    <div class="bg-red-500 h-2 rounded-full" style="width: {{ negative_pct }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-container mt-4">
+                            <canvas id="sentimentTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="lg:w-1/3">
+                <div class="bg-white rounded-xl shadow-md h-full">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h5 class="font-semibold text-lg">Quick Stats</h5>
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-500">Analyzed Posts</span>
+                                <span class="text-green-500"><i class="fas fa-caret-up"></i> {{ analyzed_posts_growth
+                                    }}%</span>
+                            </div>
+                            <div class="stat-number">{{ "{:,}".format(analyzed_posts) }}</div>
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-500">Sentiment Score</span>
+                                <span>{{ sentiment_score }}/10</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: {{ sentiment_score * 10 }}%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-500">Engagement Rate</span>
+                                <span class="text-red-500"><i class="fas fa-caret-down"></i> {{ engagement_change
+                                    }}%</span>
+                            </div>
+                            <div class="stat-number">{{ engagement_rate }}%</div>
+                            <div class="chart-container mt-2" style="height: 60px;">
+                                <canvas id="engagementChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-500">Brand Mentions</span>
+                                <span class="text-green-500"><i class="fas fa-caret-up"></i> {{ mentions_growth
+                                    }}%</span>
+                            </div>
+                            <div class="stat-number">{{ "{:,}".format(brand_mentions) }}</div>
+                            <div class="chart-container mt-2" style="height: 60px;">
+                                <canvas id="mentionsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Row: Platform Analysis -->
+        <div class="mb-6" id="dashboard">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h5 class="font-semibold text-lg">Social Media Platforms</h5>
+                    <p class="text-gray-500">Analyze sentiment across multiple social media platforms with our
+                        comprehensive tools.</p>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Facebook -->
+                        <div class="platform-card facebook-card bg-white rounded-lg shadow-sm h-full">
+                            <div class="p-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h6 class="font-medium"><i class="fab fa-facebook text-blue-600 mr-2"></i> Facebook
+                                    </h6>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">{{
+                                        "{:,}".format(platform_stats.facebook.posts) }} posts</span>
+                                </div>
+                                <div class="chart-container" style="height: 120px;">
+                                    <canvas id="facebookChart"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('dashboard') }}"
+                                        class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
+                                        View Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Twitter -->
+                        <div class="platform-card twitter-card bg-white rounded-lg shadow-sm h-full">
+                            <div class="p-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h6 class="font-medium"><i class="fab fa-twitter text-blue-400 mr-2"></i> Twitter
+                                    </h6>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">{{
+                                        "{:,}".format(platform_stats.twitter.tweets) }} tweets</span>
+                                </div>
+                                <div class="chart-container" style="height: 120px;">
+                                    <canvas id="twitterChart"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('tweet_analysis') }}"
+                                        class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
+                                        View Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instagram -->
+                        <div class="platform-card instagram-card bg-white rounded-lg shadow-sm h-full">
+                            <div class="p-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h6 class="font-medium"><i class="fab fa-instagram text-pink-600 mr-2"></i>
+                                        Instagram</h6>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">84K posts</span>
+                                </div>
+                                <div class="chart-container" style="height: 120px;">
+                                    <canvas id="instagramChart"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <button
+                                        class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
+                                        View Dashboard</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third Row: Sentiment Insights -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md h-full">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h5 class="font-semibold text-lg">Key Sentiment Insights</h5>
+                    <p class="text-gray-500">Discover actionable insights from your social media sentiment analysis.</p>
+                </div>
+                <div class="p-6">
+                    <!-- Positive Drivers -->
+                    <div class="mb-6">
+                        <h6 class="flex justify-between items-center font-medium mb-2">
+                            <span>Positive Sentiment Drivers</span>
+                            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded">{{
+                                keyword_insights.positive_drivers.confidence }}% confidence</span>
+                        </h6>
+                        <p class="text-gray-600 mb-3">Customer service and product quality are the main drivers of
+                            positive sentiment across platforms.</p>
+                        <div class="chart-container" style="height: 100px;">
+                            <canvas id="positiveDriversChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Negative Drivers -->
+                    <div class="mb-6">
+                        <h6 class="flex justify-between items-center font-medium mb-2">
+                            <span>Negative Sentiment Drivers</span>
+                            <span class="bg-red-500 text-white text-xs px-2 py-1 rounded">{{
+                                keyword_insights.negative_drivers.confidence }}% confidence</span>
+                        </h6>
+                        <p class="text-gray-600 mb-3">Response time and pricing concerns are the primary sources of
+                            negative sentiment.</p>
+                        <div class="chart-container" style="height: 100px;">
+                            <canvas id="negativeDriversChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Emerging Trends -->
+                    <div>
+                        <h6 class="flex justify-between items-center font-medium mb-2">
+                            <span>Emerging Trends</span>
+                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">+{{
+                                keyword_insights.emerging_trends.growth }}% growth</span>
+                        </h6>
+                        <p class="text-gray-600 mb-3">Increasing mentions of {{
+                            keyword_insights.emerging_trends.trend.lower() }} in recent discussions.</p>
+                        <div class="chart-container" style="height: 100px;">
+                            <canvas id="trendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl shadow-md h-full">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h5 class="font-semibold text-lg">Top Keywords</h5>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            {% for keyword in keyword_insights.top_keywords %}
+                            <span class="keyword-badge">#{{ keyword.text }} <small>{{ keyword.count }}</small></span>
+                            {% endfor %}
+                            <div class="chart-container mt-3" style="height: 400px;">
+                                <canvas id="keywordsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="gradient-footer text-white py-8 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- About -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-3">About</h5>
+                    <p class="text-gray-300">We provide real-time sentiment analysis on social media data. Powered by AI
+                        & multilingual support.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-3">Quick Links</h5>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-white transition">Home</a></li>
+                        <li><a href="/dashboard" class="text-gray-300 hover:text-white transition">Facebook
+                                Dashboard</a></li>
+                        <li><a href="/tweets" class="text-gray-300 hover:text-white transition">Twitter Dashboard</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-3">Contact</h5>
+                    <p class="text-gray-300"><i class="fas fa-envelope mr-2"></i> bscdcl@smartbhopal.city</p>
+                    <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> +91 9109190390</p>
+                </div>
+            </div>
+
+            <hr class="border-gray-700 my-6">
+
+            <div class="text-center text-gray-300">
+                <p>&copy; 2025 Sentiment Analytics</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global Chart Config
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#6c757d';
+
+        // Sentiment Trend Chart
+        const sentimentTrendData = {{ trend_data | safe }};
+        const sentimentTrendCtx = document.getElementById('sentimentTrendChart').getContext('2d');
+        new Chart(sentimentTrendCtx, {
+            type: 'line',
+            data: sentimentTrendData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Engagement Chart
+        const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+        new Chart(engagementCtx, {
+            type: 'line',
+            data: {
+                labels: ['W1', 'W2', 'W3', 'W4'],
+                datasets: [{
+                    data: [5.2, 5.0, 4.8, 4.7],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        min: 4,
+                        max: 5.5
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 0
+                    }
+                }
+            }
+        });
+
+        // Mentions Chart
+        const mentionsCtx = document.getElementById('mentionsChart').getContext('2d');
+        new Chart(mentionsCtx, {
+            type: 'line',
+            data: {
+                labels: ['W1', 'W2', 'W3', 'W4'],
+                datasets: [{
+                    data: [18, 20, 22, 24.8],
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        min: 15,
+                        max: 26
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 0
+                    }
+                }
+            }
+        });
+
+        // Platform Charts
+        const platformData = {{ platform_data | safe }};
+
+        const createPlatformChart = (id, data) => {
+            const ctx = document.getElementById(id).getContext('2d');
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positive', 'Neutral', 'Negative'],
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#4cc9f0',
+                            '#adb5bd',
+                            '#f72585'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        };
+
+        createPlatformChart('facebookChart', platformData.facebook);
+        createPlatformChart('twitterChart', platformData.twitter);
+        createPlatformChart('instagramChart', [72, 22, 6]); // Placeholder for Instagram
+
+        // Positive Drivers Chart
+        const driversData = {{ drivers_data | safe }};
+        const positiveDriversCtx = document.getElementById('positiveDriversChart').getContext('2d');
+        new Chart(positiveDriversCtx, {
+            type: 'bar',
+            data: {
+                labels: driversData.positive.labels,
+                datasets: [{
+                    data: driversData.positive.data,
+                    backgroundColor: '#4cc9f0'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        display: false
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                indexAxis: 'y'
+            }
+        });
+
+        // Negative Drivers Chart
+        const negativeDriversCtx = document.getElementById('negativeDriversChart').getContext('2d');
+        new Chart(negativeDriversCtx, {
+            type: 'bar',
+            data: {
+                labels: driversData.negative.labels,
+                datasets: [{
+                    data: driversData.negative.data,
+                    backgroundColor: '#f72585'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        display: false
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                indexAxis: 'y'
+            }
+        });
+
+        // Trends Chart
+        const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                datasets: [{
+                    label: 'Sustainability Mentions',
+                    data: [15, 22, 28, 34, 42],
+                    borderColor: '#3a86ff',
+                    backgroundColor: 'rgba(58, 134, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        display: false,
+                        beginAtZero: true
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 0
+                    }
+                }
+            }
+        });
+
+        // Keywords Chart
+        const keywordData = {{ keyword_data | safe }};
+        const keywordsCtx = document.getElementById('keywordsChart').getContext('2d');
+        new Chart(keywordsCtx, {
+            type: 'bar',
+            data: {
+                labels: keywordData.labels,
+                datasets: [{
+                    data: keywordData.data,
+                    backgroundColor: [
+                        '#4361ee',
+                        '#3a86ff',
+                        '#4cc9f0',
+                        '#4895ef'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        display: false
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("contactForm");
+            const formSuccess = document.getElementById("formSuccess");
+            const formError = document.getElementById("formError");
+
+            form.addEventListener("submit", async function (event) {
+                event.preventDefault(); // STOP the normal form submission
+
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const result = await response.json(); // Parse JSON response
+
+                    if (result.success) {
+                        form.reset(); // Clear form fields
+                        formSuccess.textContent = result.message || "Your message has been sent!";
+                        formSuccess.classList.remove("d-none");
+                        formError.classList.add("d-none");
+                    } else {
+                        formError.textContent = result.error || "Something went wrong. Try again.";
+                        formSuccess.classList.add("d-none");
+                        formError.classList.remove("d-none");
+                    }
+                } catch (error) {
+                    console.error("Submission Error:", error);
+                    formError.textContent = "A network error occurred. Please try again.";
+                    formSuccess.classList.add("d-none");
+                    formError.classList.remove("d-none");
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                <h4 class="font-weight-bold text-white">Facebook Analysis</h4>
+            </a>
+
+            <div class="" id="navbarNav">
+                <ul class="navbar-nav align-items-lg-center w-100  flex-lg-row gap-2 gap-lg-3">
+                    <li class="nav-item">
+                        <form id="pageForm" method="POST" action="{{ url_for('dashboard') }}"
+                            class=" flex-column flex-lg-row w-100">
+                            <label for="page_id" class="me-2 mb-1 mb-lg-0 text-white">Select Page:</label>
+                            <select id="page_id" name="page_id" class="form-select w-100 w-lg-auto"
+                                onchange="document.getElementById('pageForm').submit();">
+                                <option value="1448364408720250" {% if request.form.get('page_id')=='1448364408720250'
+                                    %}selected{% endif %}>ISRO
+                                </option>
+                                <option value="1052601808104708" {% if request.form.get('page_id')=='1052601808104708'
+                                    %}selected{% endif %}>Bhopal
+                                    Smart City</option>
+                                <option value="368157233303532" {% if request.form.get('page_id')=='368157233303532'
+                                    %}selected{% endif %}>Bhopal Municipal Corporation</option>
+                                <option value="27682782579" {% if request.form.get('page_id')=='27682782579'
+                                    %}selected{% endif %}>AajTak</option>
+                                <option value="717707264961942" {% if request.form.get('page_id')=='717707264961942'
+                                    %}selected{% endif %}>CM Madhya Pradesh</option>
+                                <option value="1437145013080740" {% if request.form.get('page_id')=='1437145013080740'
+                                    %}selected{% endif %}>Republic
+                                    Bharat</option>
+                            </select>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4 px-3">
+        <div class="row">
+            {% set stats = [
+            {'title': 'Total Posts', 'value': posts|length},
+            {'title': 'Total Comments', 'value': total_comments},
+            {'title': 'Likes', 'value': total_likes},
+            {'title': 'Shares', 'value': total_shares}
+            ] %}
+            {% for stat in stats %}
+            <div class="col-6 col-sm-6 col-md-3 mb-3">
+                <div class="card text-center small-card">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ stat.title }}</h6>
+                        <p class="card-text">{{ stat.value }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="row">
+            <div class="col-lg-5 col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Total Comment Sentiment</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container total-sentiment-chart">
+                            <canvas id="totalSentimentBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Sentiment Analysis</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container sentiment-analysis-chart">
+                            <canvas id="sentimentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Only visible on md and larger screens -->
+                <div class="d-none d-md-block">
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0 text-primary">Comment-wise Sentiment</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container sentiment-time-chart">
+                                <canvas id="sentimentOverTimeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Section -->
+            <div class="col-lg-7 col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Posts</h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="posts-container" class="overflow-auto">
+                            {% for post in posts %}
+                            <div class="card mb-3 post-item mx-2 my-2" data-post-id="{{ post.id }}"
+                                data-likes="{{ post.likes }}" data-shares="{{ post.shares }}">
+                                <div class="card-body">
+                                    <div class="d-flex flex-column flex-md-row">
+                                        <div class="post-content flex-grow-1">
+                                            <h5 class="card-title">{{ post.message }}</h5>
+                                            <p class="text-muted"><small>{{ post.created_time }}</small></p>
+                                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                                <span class="badge bg-primary"><i class="fas fa-thumbs-up me-1"></i> {{
+                                                    post.likes }}</span>
+                                                <span class="badge bg-success"><i class="fas fa-share me-1"></i> {{
+                                                    post.shares }}</span>
+                                                <span class="badge 
+                                                    {% if post.sentiment == 'Positive' %}bg-success
+                                                    {% elif post.sentiment == 'Negative' %}bg-danger
+                                                    {% else %}bg-secondary
+                                                    {% endif %}">
+                                                    {{ post.sentiment }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {% if post_sentiment_data[post.id]['Image URL'] %}
+                                        <div class="post-image ms-md-3 mt-3 mt-md-0">
+                                            <img src="{{ post_sentiment_data[post.id]['Image URL'] }}" alt="Post Image"
+                                                class="img-fluid rounded" style="max-height: 200px; width: auto;">
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <h6 class="toggle-comments" style="cursor: pointer;">
+                                            <i class="fas fa-comments me-1"></i> Comments <i
+                                                class="fas fa-chevron-down"></i>
+                                        </h6>
+                                        <div class="comment-section d-none mt-2">
+                                            <ul class="list-group list-group-flush">
+                                                {% for comment in post_sentiment_data[post.id]['Comments'] %}
+                                                <li class="list-group-item">
+                                                    <p><strong>Comment:</strong> {{ comment['Comment Message'] }}</p>
+                                                    <p><strong>Sentiment:</strong>
+                                                        <span class="badge 
+                                                            {% if comment['Sentiment'] == 'Positive' %}bg-success
+                                                            {% elif comment['Sentiment'] == 'Negative' %}bg-danger
+                                                            {% else %}bg-secondary
+                                                            {% endif %}">
+                                                            {{ comment['Sentiment'] }}
+                                                        </span>
+                                                    </p>
+                                                    <p class="text-muted"><small>{{ comment['Created Time'] }}</small>
+                                                    </p>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <footer class="bg-dark text-white pt-4 pb-3 mt-5" style='background:linear-gradient(135deg, #070707, #000000)'>
+        <div class="container text-left text-md-start">
+            <div class="row">
+
+                <!-- About -->
+                <div class="col-md-4 mb-3">
+                    <h5>About</h5>
+                    <p>We provide real-time sentiment analysis on social media data. Powered by AI & multilingual
+                        support.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-md-4 mb-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-white text-decoration-none">Home</a></li>
+                        <li><a href="/dashboard" class="text-white text-decoration-none">Facebook Dashboard</a></li>
+                        <li><a href="/tweets" class="text-white text-decoration-none">Twitter Dashboard</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="col-md-4 mb-3">
+                    <h5>Contact</h5>
+                    <p><i class="bi bi-envelope"></i> bscdcl@smartbhopal.city</p>
+                    <p><i class="bi bi-phone"></i> +91 9109190390</p>
+                </div>
+
+            </div>
+
+            <hr class="bg-white">
+
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 Sentiment Analytics</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Rest of your JavaScript remains exactly the same -->
+    <script>
+        const postSentimentData = {{ post_sentiment_data | tojson }};
+        const sentimentTimeData = {{ sentiment_time_data | tojson }};
+        let sentimentChart, sentimentOverTimeChart;
+        let commentWiseSentimentChart;
+
+
+        function updateChart(postId) {
+            const postData = postSentimentData[postId];
+            const labels = ['Positive', 'Negative', 'Neutral'];
+            const data = [postData['Positive'], postData['Negative'], postData['Neutral']];
+
+            if (sentimentChart) sentimentChart.destroy();
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            sentimentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Comments',
+                        data: data,
+                        backgroundColor: ['rgba(75,192,192,0.2)', 'rgba(255,99,132,0.2)', 'rgba(153,102,255,0.2)'],
+                        borderColor: ['rgba(75,192,192,1)', 'rgba(255,99,132,1)', 'rgba(153,102,255,1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    animation: { animateRotate: true }
+                }
+            });
+
+            updateTimeChart(postId);
+        }
+
+        function updateTimeChart(postId) {
+            const timeData = sentimentTimeData[postId];
+
+            if (!timeData || !Array.isArray(timeData) || timeData.length === 0) {
+                console.warn(`No sentiment time data found for post ID: ${postId}`);
+                if (sentimentOverTimeChart) sentimentOverTimeChart.destroy();
+                return;
+            }
+
+            const grouped = {};
+            timeData.forEach(entry => {
+                const date = new Date(entry.created_time);
+                const minuteKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                if (!grouped[minuteKey]) {
+                    grouped[minuteKey] = { Positive: 0, Neutral: 0, Negative: 0 };
+                }
+                grouped[minuteKey].Positive += parseInt(entry.Positive) || 0;
+                grouped[minuteKey].Neutral += parseInt(entry.Neutral) || 0;
+                grouped[minuteKey].Negative += parseInt(entry.Negative) || 0;
+            });
+
+            const labels = Object.keys(grouped);
+            const positives = labels.map(key => grouped[key].Positive);
+            const neutrals = labels.map(key => grouped[key].Neutral);
+            const negatives = labels.map(key => grouped[key].Negative);
+
+            if (sentimentOverTimeChart) sentimentOverTimeChart.destroy();
+
+            const ctx = document.getElementById('sentimentOverTimeChart').getContext('2d');
+            sentimentOverTimeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Positive',
+                            data: positives,
+                            backgroundColor: '#28a74588',
+                            borderColor: '#28a745',
+                            borderWidth: 1,
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Neutral',
+                            data: neutrals,
+                            backgroundColor: '#6c757d88',
+                            borderColor: '#6c757d',
+                            borderWidth: 1,
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Negative',
+                            data: negatives,
+                            backgroundColor: '#dc354588',
+                            borderColor: '#dc3545',
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Sentiment Over Time (Per Minute)',
+                            font: { size: 18 }
+                        },
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: { display: true, text: 'Time' },
+                            ticks: { color: '#333', maxRotation: 45, minRotation: 30 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: { display: true, text: 'Comment Count' },
+                            ticks: { color: '#333' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTotalSentimentBarChart() {
+            const totals = { Positive: 0, Negative: 0, Neutral: 0 };
+
+            Object.values(postSentimentData).forEach(data => {
+                totals.Positive += data['Positive'] || 0;
+                totals.Negative += data['Negative'] || 0;
+                totals.Neutral += data['Neutral'] || 0;
+            });
+
+            const ctx = document.getElementById('totalSentimentBarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Positive', 'Negative', 'Neutral'],
+                    datasets: [{
+                        label: 'Total Comments',
+                        data: [totals.Positive, totals.Negative, totals.Neutral],
+                        backgroundColor: ['#28a74588', '#dc354588', '#6c757d88'],
+                        borderColor: ['#28a745', '#dc3545', '#6c757d'],
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Total Comment Sentiment Across All Posts',
+                            font: { size: 18 }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Comment Count' },
+                            ticks: { color: '#333' }
+                        },
+                        x: {
+                            ticks: { color: '#333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event binding
+        const postItems = document.querySelectorAll('.post-item');
+        postItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const postId = item.getAttribute('data-post-id');
+                updateChart(postId);
+            });
+        });
+
+        // Initial load
+        if (postItems.length > 0) {
+            updateChart(postItems[0].getAttribute('data-post-id'));
+        }
+        renderTotalSentimentBarChart(); // Load the new chart
+        document.querySelectorAll('.toggle-comments').forEach(header => {
+            header.addEventListener('click', () => {
+                const commentSection = header.nextElementSibling;
+                commentSection.classList.toggle('d-none');
+            });
+        });
+        document.getElementById("currentYear").textContent = new Date().getFullYear();
+
+    </script>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

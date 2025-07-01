@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Sentiment Analysis</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #4361ee, #3f37c9);
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-form {
+            padding: 2rem;
+        }
+
+        .form-input {
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+
+        .form-input:focus {
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .alert {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-logo {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container mx-4">
+        <div class="login-header">
+            <div class="brand-logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h1 class="text-2xl font-bold py-2">Welcome To Analysis World</h1>
+            <p class="opacity-90">Sign in to your Sentiment Analysis account</p>
+        </div>
+
+        <div class="login-form">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert bg-yellow-100 text-yellow-800 border border-yellow-200" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ messages[0] }}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- Login Form -->
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-4">
+                    <label for="username" class="block text-gray-700 font-medium mb-2">Username</label>
+                    <input type="text" name="username" id="username" class="form-input w-full"
+                        placeholder="Enter your username" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 font-medium mb-2">Password</label>
+                    <input type="password" name="password" id="password" class="form-input w-full"
+                        placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-btn w-full text-white">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Login
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
