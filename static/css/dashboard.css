@@ -134,6 +134,7 @@ html {
     border-radius: 20px;
 }
 
+
 /* Responsive Adjustments */
 @media (max-width: 767.98px) {
     .small-card .card-text {
