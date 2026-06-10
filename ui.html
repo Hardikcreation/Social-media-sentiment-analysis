@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Power BI Style | Social Sentiment Dashboard</title>
+  <!-- Font Awesome 6 (free icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Chart.js CDN for clean, modern graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Roboto', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: #f3f5f9;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+
+    /* LIGHT POWER BI THEME */
+    .app-dashboard {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 2rem 2rem;
+      background: #f3f5f9;
+    }
+
+    /* header area */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 1.8rem;
+      background: white;
+      padding: 1.2rem 1.8rem;
+      border-radius: 24px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e9edf2;
+    }
+
+    .title-section h1 {
+      font-size: 1.65rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .title-section .sub {
+      font-size: 0.85rem;
+      color: #5b6e8c;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .page-selector {
+      background: #ffffff;
+      border: 1px solid #dce3ec;
+      border-radius: 40px;
+      padding: 0.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .page-selector select {
+      border: none;
+      background: transparent;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 8px 20px 8px 12px;
+      border-radius: 32px;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      color: #0f2b3d;
+    }
+
+    .refresh-btn {
+      background: white;
+      border: 1px solid #cfdfed;
+      border-radius: 32px;
+      padding: 8px 18px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #2c3e66;
+    }
+
+    .refresh-btn:hover {
+      background: #eef2fa;
+      border-color: #b9c8e0;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #cbd5e1;
+      border-top-color: #2c6e9e;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* KPI CARDS (Power BI style) */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 20px;
+      padding: 1.2rem 1.2rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+      border: 1px solid #edf2f7;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -12px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      color: #5b6e8c;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e2f41;
+      line-height: 1.2;
+    }
+
+    .stat-trend {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .trend-up { color: #2b7e3a; }
+    .trend-down { color: #c2412c; }
+
+    /* main two-column layout */
+    .dashboard-main {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 1.8rem;
+      margin-top: 0.5rem;
+    }
+
+    /* left panel: charts */
+    .charts-panel {
+      background: white;
+      border-radius: 28px;
+      border: 1px solid #eef2f8;
+      padding: 1.3rem 1.5rem 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .chart-card {
+      margin-bottom: 2rem;
+    }
+
+    .chart-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #2c3f5c;
+    }
+
+    canvas {
+      max-height: 260px;
+      width: 100%;
+    }
+
+    .sentiment-summary {
+      background: #f9fafc;
+      border-radius: 20px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sentiment-badge {
+      flex: 1;
+      text-align: center;
+      background: white;
+      border-radius: 24px;
+      padding: 10px;
+      box-shadow: 0 1px 2px #e2e8f0;
+    }
+
+    .sentiment-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .positive { color: #1f8b4c; }
+    .neutral { color: #b68b40; }
+    .negative { color: #c2412c; }
+
+    /* right panel: posts with images */
+    .posts-panel {
+      background: white;
+      border-radius: 28px;
+      border: 1px solid #eef2f8;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .posts-header {
+      padding: 1.2rem 1.2rem 0.5rem 1.2rem;
+      border-bottom: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .posts-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .pill-count {
+      background: #eef2ff;
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .post-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 580px;
+      padding: 0.5rem 0.8rem 0.8rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* modern post card with image */
+    .post-item {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 0.9rem;
+      transition: all 0.2s ease;
+      border: 1px solid #eef2f8;
+      cursor: pointer;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .post-item.active {
+      background: #f1f9fe;
+      border-left: 4px solid #2a6e9b;
+      border-left-width: 4px;
+      border-left-color: #2a6e9b;
+      box-shadow: 0 4px 12px rgba(0, 32, 64, 0.08);
+    }
+
+    .post-item:hover:not(.active) {
+      background: #fafcff;
+      border-color: #cfdfed;
+    }
+
+    .post-image {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: #eef2fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.4rem;
+      color: #7e95b0;
+    }
+
+    .post-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .post-message {
+      font-weight: 500;
+      font-size: 0.85rem;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: #1f2b3e;
+    }
+
+    .post-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: #65748c;
+    }
+
+    .post-meta i {
+      width: 14px;
+    }
+
+    .error-panel, .loading-panel {
+      background: white;
+      border-radius: 28px;
+      padding: 2rem;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6d7b93;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1.5rem;
+    }
+
+    @media (max-width: 860px) {
+      .dashboard-main {
+        grid-template-columns: 1fr;
+      }
+      .app-dashboard {
+        padding: 1rem;
+      }
+    }
+
+    button {
+      background: none;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+<div id="root" class="app-dashboard"></div>
+
+<script>
+  // --------------------------------------------------------------
+  // MOCK DATA that simulates Flask API with rich images, stats, charts
+  // replicates the exact logical shape of the original React component
+  // but enhanced with graph-ready data and post images
+  // --------------------------------------------------------------
+  const PAGES_CATALOG = [
+    { id: '1052601808104708', name: 'TechCortex Hub', avatar: 'fab fa-facebook' },
+    { id: '1052601808104710', name: 'DataLens AI', avatar: 'fab fa-twitter' },
+    { id: '1052601808104712', name: 'Future Labs', avatar: 'fab fa-linkedin' }
+  ];
+
+  // Helper: generate dynamic stats based on pageId
+  function generatePageData(pageId) {
+    const isDefault = pageId === '1052601808104708';
+    const randomFactor = isDefault ? 1.0 : (pageId === '1052601808104710' ? 1.3 : 0.85);
+    
+    const totalLikes = Math.floor(28400 * randomFactor);
+    const totalComments = Math.floor(8920 * randomFactor);
+    const totalShares = Math.floor(12300 * randomFactor);
+    const sentimentScore = (randomFactor * 72).toFixed(1);
+    
+    // Posts with rich content, images, sentiment indicators
+    const posts = [
+      { id: 'post_101', message: '🚀 New AI breakthrough: real-time sentiment analysis is faster than ever! Amazing dashboard updates incoming.', image: 'https://picsum.photos/id/26/100/100', likes: 1240, comments: 89, shares: 340, sentiment: 'positive' },
+      { id: 'post_102', message: 'We’re launching the PowerBI style integration soon. See the preview inside our social hub!', image: 'https://picsum.photos/id/0/100/100', likes: 845, comments: 42, shares: 210, sentiment: 'positive' },
+      { id: 'post_103', message: 'Update: The new React workflow drastically improved dashboard performance. Check interactive charts.', image: 'https://picsum.photos/id/15/100/100', likes: 2100, comments: 112, shares: 690, sentiment: 'positive' },
+      { id: 'post_104', message: 'Some users reported a slight delay in older pages, we are patching the metrics', image: 'https://picsum.photos/id/22/100/100', likes: 320, comments: 57, shares: 43, sentiment: 'neutral' },
+      { id: 'post_105', message: '⚠️ Scheduled maintenance: Friday 2AM EST, some features may be offline.', image: 'https://picsum.photos/id/96/100/100', likes: 198, comments: 23, shares: 12, sentiment: 'negative' }
+    ];
+    
+    if (pageId === '1052601808104710') {
+      posts.unshift({ id: 'post_201', message: '✨ DataLens AI just surpassed 1M inferences. Thanks to the community!', image: 'https://picsum.photos/id/91/100/100', likes: 3450, comments: 201, shares: 890, sentiment: 'positive' });
+      posts[1].message = 'Interactive Power BI dashboards now available for all premium users.';
+    } else if (pageId === '1052601808104712') {
+      posts[0].message = 'Future Labs presents: real-time graph rendering with Chart.js and React hooks';
+      posts[1].message = 'New office expansion in Berlin! 🏢 Join the team.';
+    }
+    
+    // calculate stats & sentiment summary
+    const stats = {
+      total_likes: totalLikes,
+      total_comments: totalComments,
+      total_shares: totalShares,
+      avg_sentiment: parseFloat(sentimentScore),
+      reach_estimate: Math.floor(totalLikes * 2.4)
+    };
+    
+    const sentimentSummary = { positive: 58, neutral: 27, negative: 15 };
+    if (pageId === '1052601808104710') sentimentSummary.positive = 72;
+    if (pageId === '1052601808104712') sentimentSummary.negative = 22;
+    
+    // Generate Chart datasets: total sentiment over last weeks (mock timeline)
+    const weeks = ['W1', 'W2', 'W3', 'W4'];
+    const positiveTrend = [65, 68, 72, 74];
+    const negativeTrend = [20, 18, 16, 14];
+    const neutralTrend = [15, 14, 12, 12];
+    
+    return {
+      pages: PAGES_CATALOG,
+      stats,
+      posts,
+      active_post_id: posts[0]?.id || null,
+      active_post: posts[0] || null,
+      total_sentiment_chart: { weeks, positive: positiveTrend, negative: negativeTrend, neutral: neutralTrend },
+      sentiment_summary: sentimentSummary
+    };
+  }
+  
+  // Reactive render engine (simulate React with pure JS)
+  let currentState = {
+    selectedPageId: '1052601808104708',
+    requestedPostId: null,
+    isPending: false,
+    data: null,
+    loading: true,
+    error: null
+  };
+  
+  let chartInstances = { totalChart: null };
+  
+  function fetchDashboardData(pageId) {
+    // simulate async API call
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        try {
+          const pageData = generatePageData(pageId);
+          resolve({ data: pageData, error: null });
+        } catch (err) {
+          resolve({ data: null, error: err.message });
+        }
+      }, 500);
+    });
+  }
+  
+  async function loadData(pageId, transition = true) {
+    if (transition) {
+      currentState.isPending = true;
+      currentState.loading = true;
+      renderDOM();
+    }
+    const { data, error } = await fetchDashboardData(pageId);
+    currentState.data = data;
+    currentState.error = error;
+    currentState.loading = false;
+    currentState.isPending = false;
+    // reset requested post to null after page change (but keep selection? preserve logic)
+    if (transition) currentState.requestedPostId = null;
+    renderDOM();
+    // after render graphs
+    setTimeout(() => {
+      attachCharts(currentState.data);
+    }, 50);
+  }
+  
+  function handlePageChange(newPageId) {
+    if (newPageId === currentState.selectedPageId) return;
+    currentState.selectedPageId = newPageId;
+    currentState.requestedPostId = null;
+    loadData(newPageId, true);
+  }
+  
+  function handleRefresh() {
+    loadData(currentState.selectedPageId, true);
+  }
+  
+  function handleSelectPost(postId) {
+    currentState.requestedPostId = postId;
+    renderDOM();
+    setTimeout(() => attachCharts(currentState.data), 50);
+  }
+  
+  function getActivePostId() {
+    const posts = currentState.data?.posts || [];
+    const requestedExists = posts.some(p => p.id === currentState.requestedPostId);
+    if (requestedExists) return currentState.requestedPostId;
+    return currentState.data?.active_post_id || posts[0]?.id || null;
+  }
+  
+  function getActivePost() {
+    const posts = currentState.data?.posts || [];
+    const activeId = getActivePostId();
+    return posts.find(p => p.id === activeId) || currentState.data?.active_post || posts[0] || null;
+  }
+  
+  function attachCharts(data) {
+    if (!data) return;
+    const activePost = getActivePost();
+    let chartData = data.total_sentiment_chart;
+    // For demo, can also modify based on active post sentiment bias, but we'll show main timeline
+    const ctxTotal = document.getElementById('totalSentimentCanvas');
+    if (!ctxTotal) return;
+    if (chartInstances.totalChart) chartInstances.totalChart.destroy();
+    chartInstances.totalChart = new Chart(ctxTotal, {
+      type: 'line',
+      data: {
+        labels: chartData.weeks,
+        datasets: [
+          { label: 'Positive %', data: chartData.positive, borderColor: '#1f8b4c', backgroundColor: 'rgba(31,139,76,0.05)', tension: 0.3, fill: true, pointBackgroundColor: '#1f8b4c' },
+          { label: 'Neutral %', data: chartData.neutral, borderColor: '#b68b40', backgroundColor: 'transparent', borderDash: [5,5], tension: 0.3 },
+          { label: 'Negative %', data: chartData.negative, borderColor: '#c2412c', backgroundColor: 'transparent', tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' }, tooltip: { mode: 'index' } }
+      }
+    });
+    
+    // optional second chart: sentiment per post preview
+    const ctxPostSent = document.getElementById('postSentimentCtx');
+    if (ctxPostSent && activePost) {
+      // Use active post to show related sentiment composition dummy, but make interactive
+      if (chartInstances.postChart) chartInstances.postChart.destroy();
+      const postSentData = [activePost.sentiment === 'positive' ? 78 : (activePost.sentiment === 'negative' ? 22 : 50), 
+                            activePost.sentiment === 'neutral' ? 34 : 25, 
+                            activePost.sentiment === 'negative' ? 68 : 18];
+      chartInstances.postChart = new Chart(ctxPostSent, {
+        type: 'doughnut',
+        data: { labels: ['Positive', 'Neutral', 'Negative'], datasets: [{ data: [activePost.sentiment === 'positive' ? 72 : 28, activePost.sentiment === 'neutral' ? 55 : 20, activePost.sentiment === 'negative' ? 65 : 15], backgroundColor: ['#1f8b4c', '#b68b40', '#c2412c'] }] }
+      });
+    } else if (ctxPostSent && !chartInstances.postChart) {
+      // fallback
+      chartInstances.postChart = new Chart(ctxPostSent, { type: 'doughnut', data: { labels: ['Pos','Neu','Neg'], datasets: [{ data: [60,25,15], backgroundColor: ['#1f8b4c','#b68b40','#c2412c'] }] } });
+    }
+  }
+  
+  function renderDOM() {
+    const container = document.getElementById('root');
+    if (!container) return;
+    const { loading, error, data, isPending, selectedPageId } = currentState;
+    const activePostId = data ? getActivePostId() : null;
+    const activePost = data ? getActivePost() : null;
+    
+    // statcards with nice icons
+    const stats = data?.stats || { total_likes: 0, total_comments: 0, total_shares: 0, avg_sentiment: 0, reach_estimate: 0 };
+    
+    const html = `
+      <div class="dashboard-header">
+        <div class="title-section">
+          <h1><i class="fas fa-chart-line" style="color: #2a6e9b;"></i> Social Pulse · Power BI Edition</h1>
+          <div class="sub"><i class="fas fa-chart-pie"></i> Live sentiment analytics | Facebook posts + images</div>
+        </div>
+        <div class="controls-row">
+          <div class="page-selector">
+            <i class="fas fa-globe"></i>
+            <select id="pageSelector" aria-label="Select Page">
+              ${PAGES_CATALOG.map(p => `<option value="${p.id}" ${selectedPageId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+          </div>
+          <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> ${isPending ? 'Refreshing...' : 'Refresh'}</button>
+          ${isPending ? '<div class="loading-spinner"></div>' : ''}
+        </div>
+      </div>
+      
+      ${error ? `<div class="error-panel"><i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${error} <button class="refresh-btn" style="margin-left:12px;" id="retryErrBtn">Retry</button></div>` : ''}
+      
+      ${loading && !data ? `<div class="loading-panel"><div class="loading-spinner" style="width:32px;height:32px;"></div><p style="margin-top:12px;">Loading dashboard metrics & posts...</p></div>` : ''}
+      
+      ${data ? `
+        <div class="kpi-grid">
+          <div class="stat-card"><div class="stat-title"><i class="fas fa-thumbs-up"></i> Total Likes</div><div class="stat-value">${stats.total_likes.toLocaleString()}</div><div class="stat-trend"><i class="fas fa-arrow-up trend-up"></i><span class="trend-up">+12%</span></div></div>
+          <div class="stat-card"><div class="stat-title"><i class="fas fa-comment"></i> Comments</div><div class="stat-value">${stats.total_comments.toLocaleString()}</div><div class="stat-trend"><i class="fas fa-chart-line"></i> engaged</div></div>
+          <div class="stat-card"><div class="stat-title"><i class="fas fa-share-alt"></i> Shares</div><div class="stat-value">${stats.total_shares.toLocaleString()}</div><div class="stat-trend"><i class="fas fa-rocket"></i> viral score</div></div>
+          <div class="stat-card"><div class="stat-title"><i class="fas fa-smile"></i> Sentiment Score</div><div class="stat-value">${stats.avg_sentiment}%</div><div class="stat-trend"><i class="fas fa-chart-simple"></i> positive trend</div></div>
+        </div>
+        
+        <div class="dashboard-main">
+          <div class="charts-panel">
+            <div class="chart-card"><h3><i class="fas fa-chart-line"></i> 4-Week Sentiment Evolution</h3><canvas id="totalSentimentCanvas" height="200"></canvas></div>
+            <div class="chart-card"><h3><i class="fas fa-chart-pie"></i> Active Post: "${activePost?.message?.substring(0, 50) || 'Post'}" — Sentiment breakdown</h3><canvas id="postSentimentCtx" height="150"></canvas></div>
+            <div class="sentiment-summary">
+              <div class="sentiment-badge"><div class="sentiment-label positive">POSITIVE</div><strong>${data.sentiment_summary.positive}%</strong></div>
+              <div class="sentiment-badge"><div class="sentiment-label neutral">NEUTRAL</div><strong>${data.sentiment_summary.neutral}%</strong></div>
+              <div class="sentiment-badge"><div class="sentiment-label negative">NEGATIVE</div><strong>${data.sentiment_summary.negative}%</strong></div>
+            </div>
+          </div>
+          
+          <div class="posts-panel">
+            <div class="posts-header"><h2><i class="fas fa-newspaper"></i> Latest Posts</h2><span class="pill-count">${data.posts.length} items</span></div>
+            <div class="post-list" id="postListContainer">
+              ${data.posts.map(post => `
+                <div class="post-item ${activePostId === post.id ? 'active' : ''}" data-post-id="${post.id}">
+                  <div class="post-image">
+                    ${post.image ? `<img src="${post.image}" alt="post visual" style="width:52px;height:52px;border-radius:14px;object-fit:cover;">` : `<i class="fas fa-image"></i>`}
+                  </div>
+                  <div class="post-content">
+                    <div class="post-message">${post.message}</div>
+                    <div class="post-meta"><span><i class="fas fa-heart"></i> ${post.likes}</span><span><i class="fas fa-comment"></i> ${post.comments}</span><span><i class="fas fa-retweet"></i> ${post.shares}</span><span class="${post.sentiment === 'positive' ? 'positive' : (post.sentiment === 'negative' ? 'negative' : 'neutral')}"><i class="fas fa-face-smile"></i> ${post.sentiment}</span></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      ` : ''}
+      
+      <div class="footer"><i class="fas fa-chart-simple"></i> Power BI inspired • Live sentiment & post insights • Light theme with post images</div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // attach events after render
+    const pageSelector = document.getElementById('pageSelector');
+    if (pageSelector) pageSelector.addEventListener('change', (e) => handlePageChange(e.target.value));
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => handleRefresh());
+    const retryBtn = document.getElementById('retryErrBtn');
+    if (retryBtn) retryBtn.addEventListener('click', () => handleRefresh());
+    
+    // attach click on each post
+    const postDivs = document.querySelectorAll('.post-item');
+    postDivs.forEach(el => {
+      el.addEventListener('click', (e) => {
+        const postId = el.getAttribute('data-post-id');
+        if (postId) handleSelectPost(postId);
+      });
+    });
+    
+    if (data && !loading) {
+      attachCharts(data);
+    }
+  }
+  
+  // initial load
+  (async () => {
+    await loadData(currentState.selectedPageId, false);
+  })();
+</script>
+</body>
+</html>

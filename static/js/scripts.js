@@ -50,7 +50,7 @@ window.onload = function () {
         const b = Math.round(b1 + (b2 - b1) * percentage);
         const a = 0.95; // High opacity for visible fill
 
-        return `rgba(${r}, ${g}, ${b}, ${a})`;
+        return `rgba(${r}, ${g}, ${b}, ${a})`
     }
 
     const startColor = 'rgba(54, 162, 235, 1)';    // Blue

@@ -37,9 +37,7 @@
             border-top-color: #1da1f2;
         }
 
-        .instagram-card {
-            border-top-color: #e1306c;
-        }
+
 
         .keyword-badge {
             background-color: #e9ecef;
@@ -74,32 +72,66 @@
         .chartjs-render-monitor {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        /* Animation enhancements */
+        .stat-number {
+            transition: all 0.3s ease;
+        }
+
+        .stat-number.animating {
+            transform: scale(1.05);
+            color: #3b82f6;
+        }
+
+        .progress-bar-animate {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Pause state styles */
+        .paused .stat-number {
+            opacity: 0.7;
+        }
+
+        .paused .chart-container {
+            opacity: 0.7;
+        }
+
+        .paused .progress-bar-animate {
+            opacity: 0.7;
+        }
     </style>
 </head>
 
 <body class="flex flex-col min-h-screen bg-black-80">
     <nav class="navbar gradient-nav text-white shadow-md py-3">
         <div class="container mx-auto px-4 flex flex-wrap items-center justify-between">
-            <a class="navbar-brand flex items-center text-xl font-semibold" href="{{ url_for('home') }}">
+            <a class="navbar-brand flex items-center text-xl font-semibold" href="{{ url_for('web.home') }}">
                 <i class="fas fa-chart-line mr-2"></i>Sentiment Analysis
             </a>
 
             <div class="flex items-center overflow-auto space-x-3 mx-2" style="flex-wrap: nowrap;">
-                <a href="{{ url_for('dashboard') }}"
+                <a href="{{ url_for('web.dashboard') }}"
                     class="btn bg-black-400 hover:bg-blue-700  text-white px-4 py-2 rounded-full font-medium transition">
                     Facebook</a>
-                <a href="{{ url_for('tweet_analysis') }}"
+                <a href="{{ url_for('web.tweet_analysis') }}"
                     class="btn bg-black-400 hover:bg-blue-500 text-white px-4 py-2 rounded-full  font-medium transition">
                     X(Tweeter)</a>
-                <a
-                    class="btn bg-black-400 hover:bg-blue-500 text-white px-4 py-2 rounded-full  font-medium transition">Instagram</a>
             </div>
 
             <div class="flex items-center">
                 <span class="text-white mr-4">
                     Welcome, {{ username }}!
                 </span>
-                <a class="text-white hover:text-gray-300" href="{{ url_for('logout') }}">Logout</a>
+                <a class="text-white hover:text-gray-300" href="{{ url_for('auth.logout') }}">Logout</a>
             </div>
         </div>
     </nav>
@@ -131,7 +163,16 @@
                 <div class="bg-white rounded-xl shadow-md overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                         <span class="font-semibold">Global Sentiment Overview</span>
-                        <div class="bg-blue-600 text-white text-xs px-2 py-1 rounded">Live</div>
+                        <div class="flex items-center space-x-2">
+                            <div id="refreshIndicator" class="hidden">
+                                <span class="text-xs text-blue-600 ml-1 pulse">Refreshing...</span>
+                            </div>
+                            <div id="periodIndicator" class="bg-green-600 text-white text-xs px-2 py-1 rounded">
+                                <span id="periodText">Last 24h</span>
+                            </div>
+                            
+                            <div class="bg-blue-600 text-white text-xs px-2 py-1 rounded">Live</div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -178,16 +219,16 @@
                                 <span class="text-green-500"><i class="fas fa-caret-up"></i> {{ analyzed_posts_growth
                                     }}%</span>
                             </div>
-                            <div class="stat-number">{{ "{:,}".format(analyzed_posts) }}</div>
+                            <div id="analyzedPostsCounter" class="stat-number">{{ "{:,}".format(analyzed_posts) }}</div>
                         </div>
 
                         <div class="mb-6">
                             <div class="flex justify-between mb-1">
                                 <span class="text-gray-500">Sentiment Score</span>
-                                <span>{{ sentiment_score }}/10</span>
+                                <span id="sentimentScoreDisplay">{{ sentiment_score }}/10</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: {{ sentiment_score * 10 }}%">
+                                <div id="sentimentScoreBar" class="bg-blue-500 h-2 rounded-full" style="width: {{ sentiment_score * 10 }}%">
                                 </div>
                             </div>
                         </div>
@@ -198,7 +239,7 @@
                                 <span class="text-red-500"><i class="fas fa-caret-down"></i> {{ engagement_change
                                     }}%</span>
                             </div>
-                            <div class="stat-number">{{ engagement_rate }}%</div>
+                            <div id="engagementRateCounter" class="stat-number">{{ engagement_rate }}%</div>
                             <div class="chart-container mt-2" style="height: 60px;">
                                 <canvas id="engagementChart"></canvas>
                             </div>
@@ -210,7 +251,7 @@
                                 <span class="text-green-500"><i class="fas fa-caret-up"></i> {{ mentions_growth
                                     }}%</span>
                             </div>
-                            <div class="stat-number">{{ "{:,}".format(brand_mentions) }}</div>
+                            <div id="brandMentionsCounter" class="stat-number">{{ "{:,}".format(brand_mentions) }}</div>
                             <div class="chart-container mt-2" style="height: 60px;">
                                 <canvas id="mentionsChart"></canvas>
                             </div>
@@ -229,7 +270,7 @@
                         comprehensive tools.</p>
                 </div>
                 <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Facebook -->
                         <div class="platform-card facebook-card bg-white rounded-lg shadow-sm h-full">
                             <div class="p-4">
@@ -243,7 +284,7 @@
                                     <canvas id="facebookChart"></canvas>
                                 </div>
                                 <div class="mt-3">
-                                    <a href="{{ url_for('dashboard') }}"
+                                    <a href="{{ url_for('web.dashboard') }}"
                                         class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
                                         View Dashboard</a>
                                 </div>
@@ -263,31 +304,14 @@
                                     <canvas id="twitterChart"></canvas>
                                 </div>
                                 <div class="mt-3">
-                                    <a href="{{ url_for('tweet_analysis') }}"
+                                    <a href="{{ url_for('web.tweet_analysis') }}"
                                         class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
                                         View Dashboard</a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Instagram -->
-                        <div class="platform-card instagram-card bg-white rounded-lg shadow-sm h-full">
-                            <div class="p-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h6 class="font-medium"><i class="fab fa-instagram text-pink-600 mr-2"></i>
-                                        Instagram</h6>
-                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">84K posts</span>
-                                </div>
-                                <div class="chart-container" style="height: 120px;">
-                                    <canvas id="instagramChart"></canvas>
-                                </div>
-                                <div class="mt-3">
-                                    <button
-                                        class="w-full inline-block text-center border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-full text-sm font-medium transition">
-                                        View Dashboard</button>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
@@ -408,41 +432,416 @@
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         Chart.defaults.color = '#6c757d';
 
-        // Sentiment Trend Chart
-        const sentimentTrendData = {{ trend_data | safe }};
-        const sentimentTrendCtx = document.getElementById('sentimentTrendChart').getContext('2d');
-        new Chart(sentimentTrendCtx, {
-            type: 'line',
-            data: sentimentTrendData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
+        // Global variables
+        let sentimentTrendChart;
+        let refreshInterval;
+        let isPaused = false;
+
+        // Function to create sentiment trend chart
+        function createSentimentTrendChart(data) {
+            const sentimentTrendCtx = document.getElementById('sentimentTrendChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (sentimentTrendChart) {
+                sentimentTrendChart.destroy();
+            }
+            
+            sentimentTrendChart = new Chart(sentimentTrendCtx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
                     },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function (value) {
-                                return value + '%';
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
                             }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
+                }
+            });
+        }
+
+        // Function to animate number changes from zero to target value
+        function animateNumber(element, startValue, endValue, duration = 1000) {
+            const start = performance.now();
+            
+            // Add animating class for visual feedback
+            element.classList.add('animating');
+            
+            function updateNumber(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = endValue * easeOutQuart; // Always start from 0
+                
+                element.textContent = currentValue.toFixed(1) + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateNumber);
+                } else {
+                    // Ensure final value is exact
+                    element.textContent = endValue.toFixed(1) + '%';
+                    // Remove animating class when animation completes
+                    setTimeout(() => {
+                        element.classList.remove('animating');
+                    }, 300);
                 }
             }
+            
+            requestAnimationFrame(updateNumber);
+        }
+
+        // Function to animate progress bar from zero to target width
+        function animateProgressBar(element, startWidth, endWidth, duration = 1000) {
+            const start = performance.now();
+            
+            // Add animation class
+            element.classList.add('progress-bar-animate');
+            
+            function updateProgress(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentWidth = endWidth * easeOutQuart; // Always start from 0
+                
+                element.style.width = currentWidth + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateProgress);
+                } else {
+                    // Ensure final width is exact
+                    element.style.width = endWidth + '%';
+                    // Remove animation class when complete
+                    setTimeout(() => {
+                        element.classList.remove('progress-bar-animate');
+                    }, 300);
+                }
+            }
+            
+            requestAnimationFrame(updateProgress);
+        }
+
+        // Function to animate counter numbers (for statistics like analyzed posts, brand mentions)
+        function animateCounter(element, endValue, duration = 1000) {
+            const start = performance.now();
+            
+            // Add animating class for visual feedback
+            element.classList.add('animating');
+            
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(endValue * easeOutQuart);
+                
+                element.textContent = currentValue.toLocaleString();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    // Ensure final value is exact
+                    element.textContent = endValue.toLocaleString();
+                    // Remove animating class when animation completes
+                    setTimeout(() => {
+                        element.classList.remove('animating');
+                    }, 300);
+                }
+            }
+            
+            requestAnimationFrame(updateCounter);
+        }
+
+        // Function to animate percentage counter (for engagement rate)
+        function animatePercentageCounter(element, endValue, duration = 1000) {
+            const start = performance.now();
+            
+            // Add animating class for visual feedback
+            element.classList.add('animating');
+            
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = endValue * easeOutQuart;
+                
+                element.textContent = currentValue.toFixed(1) + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    // Ensure final value is exact
+                    element.textContent = endValue.toFixed(1) + '%';
+                    // Remove animating class when animation completes
+                    setTimeout(() => {
+                        element.classList.remove('animating');
+                    }, 300);
+                }
+            }
+            
+            requestAnimationFrame(updateCounter);
+        }
+
+        // Function to animate sentiment score
+        function animateSentimentScore(element, endValue, duration = 1000) {
+            const start = performance.now();
+            
+            // Add animating class for visual feedback
+            element.classList.add('animating');
+            
+            function updateScore(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = endValue * easeOutQuart;
+                
+                element.textContent = currentValue.toFixed(1) + '/10';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateScore);
+                } else {
+                    // Ensure final value is exact
+                    element.textContent = endValue.toFixed(1) + '/10';
+                    // Remove animating class when animation completes
+                    setTimeout(() => {
+                        element.classList.remove('animating');
+                    }, 300);
+                }
+            }
+            
+            requestAnimationFrame(updateScore);
+        }
+
+        // Function to fetch updated sentiment data
+        async function fetchSentimentData() {
+            const refreshIndicator = document.getElementById('refreshIndicator');
+            
+            try {
+                // Show refresh indicator
+                refreshIndicator.classList.remove('hidden');
+                
+                const response = await fetch('/api/sentiment-data');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Animate chart update
+                    createSentimentTrendChart(data.trend_data);
+                    
+                    // Animate percentage numbers from zero to target values
+                    const positiveElement = document.querySelector('.stat-number.text-blue-500');
+                    const neutralElement = document.querySelector('.stat-number:not(.text-blue-500):not(.text-red-500)');
+                    const negativeElement = document.querySelector('.stat-number.text-red-500');
+                    
+                    animateNumber(positiveElement, 0, data.positive_pct);
+                    animateNumber(neutralElement, 0, data.neutral_pct);
+                    animateNumber(negativeElement, 0, data.negative_pct);
+                    
+                    // Animate progress bars from zero to target widths
+                    const positiveBar = document.querySelector('.bg-blue-500.h-2');
+                    const neutralBar = document.querySelector('.bg-gray-500.h-2');
+                    const negativeBar = document.querySelector('.bg-red-500.h-2');
+                    
+                    animateProgressBar(positiveBar, 0, data.positive_pct);
+                    animateProgressBar(neutralBar, 0, data.neutral_pct);
+                    animateProgressBar(negativeBar, 0, data.negative_pct);
+                    
+                    // Animate Quick Stats counters
+                    if (data.analyzed_posts !== undefined) {
+                        const analyzedPostsElement = document.getElementById('analyzedPostsCounter');
+                        if (analyzedPostsElement) {
+                            animateCounter(analyzedPostsElement, data.analyzed_posts);
+                        }
+                    }
+                    
+                    if (data.brand_mentions !== undefined) {
+                        const brandMentionsElement = document.getElementById('brandMentionsCounter');
+                        if (brandMentionsElement) {
+                            animateCounter(brandMentionsElement, data.brand_mentions);
+                        }
+                    }
+                    
+                    if (data.engagement_rate !== undefined) {
+                        const engagementRateElement = document.getElementById('engagementRateCounter');
+                        if (engagementRateElement) {
+                            animatePercentageCounter(engagementRateElement, data.engagement_rate);
+                        }
+                    }
+                    
+                    if (data.sentiment_score !== undefined) {
+                        const sentimentScoreElement = document.getElementById('sentimentScoreDisplay');
+                        const sentimentScoreBar = document.getElementById('sentimentScoreBar');
+                        if (sentimentScoreElement) {
+                            animateSentimentScore(sentimentScoreElement, data.sentiment_score);
+                        }
+                        if (sentimentScoreBar) {
+                            animateProgressBar(sentimentScoreBar, 0, data.sentiment_score * 10);
+                        }
+                    }
+                    
+                    // Update period indicator
+                    if (data.period_info) {
+                        const periodText = document.getElementById('periodText');
+                        if (periodText) {
+                            const startDate = new Date(data.period_info.start_date);
+                            const endDate = new Date(data.period_info.end_date);
+                            const periodNames = [
+                                'Last 24h',
+                                '2-3 days ago',
+                                '4-5 days ago',
+                                '6-7 days ago',
+                                '8-9 days ago',
+                                '10-11 days ago'
+                            ];
+                            const periodIndex = (data.period_info.period_number - 1) % periodNames.length;
+                            periodText.textContent = periodNames[periodIndex];
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching sentiment data:', error);
+            } finally {
+                // Hide refresh indicator
+                refreshIndicator.classList.add('hidden');
+            }
+        }
+
+        // Initialize sentiment trend chart with initial data
+        const sentimentTrendData = {{ trend_data | safe }};
+        createSentimentTrendChart(sentimentTrendData);
+
+        // Initial animation on page load - animate all counters from zero
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate initial sentiment percentages
+            const positiveElement = document.querySelector('.stat-number.text-blue-500');
+            const neutralElement = document.querySelector('.stat-number:not(.text-blue-500):not(.text-red-500)');
+            const negativeElement = document.querySelector('.stat-number.text-red-500');
+            
+            const initialPositive = parseFloat(positiveElement.textContent);
+            const initialNeutral = parseFloat(neutralElement.textContent);
+            const initialNegative = parseFloat(negativeElement.textContent);
+            
+            // Reset to zero and animate
+            positiveElement.textContent = '0.0%';
+            neutralElement.textContent = '0.0%';
+            negativeElement.textContent = '0.0%';
+            
+            setTimeout(() => {
+                animateNumber(positiveElement, 0, initialPositive);
+                animateNumber(neutralElement, 0, initialNeutral);
+                animateNumber(negativeElement, 0, initialNegative);
+            }, 500);
+            
+            // Animate progress bars
+            const positiveBar = document.querySelector('.bg-blue-500.h-2');
+            const neutralBar = document.querySelector('.bg-gray-500.h-2');
+            const negativeBar = document.querySelector('.bg-red-500.h-2');
+            
+            positiveBar.style.width = '0%';
+            neutralBar.style.width = '0%';
+            negativeBar.style.width = '0%';
+            
+            setTimeout(() => {
+                animateProgressBar(positiveBar, 0, initialPositive);
+                animateProgressBar(neutralBar, 0, initialNeutral);
+                animateProgressBar(negativeBar, 0, initialNegative);
+            }, 800);
+            
+            // Animate Quick Stats counters on page load
+            setTimeout(() => {
+                // Animate analyzed posts counter
+                const analyzedPostsElement = document.getElementById('analyzedPostsCounter');
+                if (analyzedPostsElement) {
+                    const initialAnalyzedPosts = parseInt(analyzedPostsElement.textContent.replace(/,/g, ''));
+                    analyzedPostsElement.textContent = '0';
+                    animateCounter(analyzedPostsElement, initialAnalyzedPosts);
+                }
+                
+                // Animate brand mentions counter
+                const brandMentionsElement = document.getElementById('brandMentionsCounter');
+                if (brandMentionsElement) {
+                    const initialBrandMentions = parseInt(brandMentionsElement.textContent.replace(/,/g, ''));
+                    brandMentionsElement.textContent = '0';
+                    animateCounter(brandMentionsElement, initialBrandMentions);
+                }
+                
+                // Animate engagement rate counter
+                const engagementRateElement = document.getElementById('engagementRateCounter');
+                if (engagementRateElement) {
+                    const initialEngagementRate = parseFloat(engagementRateElement.textContent);
+                    engagementRateElement.textContent = '0.0%';
+                    animatePercentageCounter(engagementRateElement, initialEngagementRate);
+                }
+                
+                // Animate sentiment score
+                const sentimentScoreElement = document.getElementById('sentimentScoreDisplay');
+                const sentimentScoreBar = document.getElementById('sentimentScoreBar');
+                if (sentimentScoreElement) {
+                    const initialSentimentScore = parseFloat(sentimentScoreElement.textContent);
+                    sentimentScoreElement.textContent = '0.0/10';
+                    animateSentimentScore(sentimentScoreElement, initialSentimentScore);
+                }
+                if (sentimentScoreBar) {
+                    sentimentScoreBar.style.width = '0%';
+                    const initialSentimentScore = parseFloat(sentimentScoreElement.textContent);
+                    animateProgressBar(sentimentScoreBar, 0, initialSentimentScore * 10);
+                }
+            }, 1200);
         });
+
+        // Function to start auto-refresh (disabled)
+        function startAutoRefresh() {
+            // auto-refresh disabled
+        }
+
+        // Function to stop auto-refresh (disabled)
+        function stopAutoRefresh() {
+            // auto-refresh disabled
+        }
+
+        // Function to toggle pause/play (disabled)
+        function togglePause() {
+            // pause/resume disabled
+        }
+
+        // Add event listener to pause button (disabled)
+        document.addEventListener('DOMContentLoaded', function() {
+            // listeners disabled
+        });
+
+        // Set up auto-refresh every 3 seconds
+        // startAutoRefresh(); // disabled: auto-refresh removed
 
         // Engagement Chart
         const engagementCtx = document.getElementById('engagementChart').getContext('2d');
@@ -558,7 +957,6 @@
 
         createPlatformChart('facebookChart', platformData.facebook);
         createPlatformChart('twitterChart', platformData.twitter);
-        createPlatformChart('instagramChart', [72, 22, 6]); // Placeholder for Instagram
 
         // Positive Drivers Chart
         const driversData = {{ drivers_data | safe }};

@@ -14,14 +14,14 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('web.home') }}">
                 <h4 class="font-weight-bold text-white">Facebook Analysis</h4>
             </a>
 
             <div class="" id="navbarNav">
                 <ul class="navbar-nav align-items-lg-center w-100  flex-lg-row gap-2 gap-lg-3">
                     <li class="nav-item">
-                        <form id="pageForm" method="POST" action="{{ url_for('dashboard') }}"
+                        <form id="pageForm" method="POST" action="{{ url_for('web.dashboard') }}"
                             class=" flex-column flex-lg-row w-100">
                             <label for="page_id" class="me-2 mb-1 mb-lg-0 text-white">Select Page:</label>
                             <select id="page_id" name="page_id" class="form-select w-100 w-lg-auto"

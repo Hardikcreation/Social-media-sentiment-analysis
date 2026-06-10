@@ -4,6 +4,8 @@ import requests
 import hashlib
 import asyncio
 import aiohttp
+from urllib.parse import urlparse
+from mimetypes import guess_extension
 from flask import Flask
 from datetime import datetime
 from models import db, Post, Comment
@@ -36,7 +38,7 @@ async def fetch_and_store_data(page_id, access_token):
     async with aiohttp.ClientSession() as session:
         # Facebook API endpoints
         def get_posts_url():
-            return f"https://graph.facebook.com/v20.0/{page_id}/posts?limit=15&fields=message,created_time,attachments{{media}},likes.summary(true),shares&access_token={access_token}"
+            return f"https://graph.facebook.com/v20.0/{page_id}/posts?limit=20&fields=message,created_time,attachments{{media}},likes.summary(true),shares&access_token={access_token}"
 
         def get_comments_url(post_id):
             return f"https://graph.facebook.com/v20.0/{post_id}/comments?limit=30&access_token={access_token}"
@@ -77,6 +79,48 @@ async def fetch_and_store_data(page_id, access_token):
             data = f"{post_id}_{created_time}_{message}"
             return hashlib.md5(data.encode()).hexdigest()
 
+        # Save remote image locally and return web path
+        def save_image_locally(remote_url: str, post_id: str) -> str:
+            if not remote_url:
+                return ""
+            try:
+                uploads_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+                os.makedirs(uploads_dir, exist_ok=True)
+
+                # derive extension from content-type or URL
+                resp = requests.get(remote_url, timeout=10, stream=True)
+                resp.raise_for_status()
+                content_type = resp.headers.get('Content-Type', '')
+                ext = ''
+                if content_type:
+                    ext_guess = guess_extension(content_type.split(';')[0].strip()) or ''
+                    # common fix: mimetypes may return .jpe for image/jpeg
+                    if ext_guess in ('.jpe', '.jpeg', '.jpg'):
+                        ext = '.jpg'
+                    elif ext_guess in ('.png', '.webp', '.gif'):
+                        ext = ext_guess
+                if not ext:
+                    path = urlparse(remote_url).path
+                    for candidate in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                        if path.lower().endswith(candidate):
+                            ext = '.jpg' if candidate == '.jpeg' else candidate
+                            break
+                if not ext:
+                    ext = '.jpg'
+
+                filename = f"{post_id}{ext}"
+                file_path = os.path.join(uploads_dir, filename)
+                with open(file_path, 'wb') as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+
+                # Return a web path that Flask can serve via static
+                return f"/static/uploads/{filename}"
+            except Exception as e:
+                print(f"Image save error for {remote_url}: {e}")
+                return ""
+
         # Fetch posts
         posts_url = get_posts_url()
         print(f"Fetching posts from: {posts_url}")
@@ -100,7 +144,8 @@ async def fetch_and_store_data(page_id, access_token):
             # Get image if available
             attachments = post.get('attachments', {}).get('data', [])
             if attachments and 'media' in attachments[0]:
-                image_url = attachments[0]['media'].get('image', {}).get('src', "")
+                remote_image_url = attachments[0]['media'].get('image', {}).get('src', "")
+                image_url = save_image_locally(remote_image_url, post_id)
 
             sentiment = analyze_sentiment(message)
 

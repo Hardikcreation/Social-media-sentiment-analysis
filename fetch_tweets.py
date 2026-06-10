@@ -143,8 +143,8 @@ def get_tweets_by_hashtag(hashtag, max_results=10, start_date=None, end_date=Non
 # Entry point
 if __name__ == '__main__':
     # Set date range (May 15 to May 19, 2025)
-    start_date = datetime(2025, 7, 22, 0, 0, 0).isoformat("T") + "Z"
-    end_date = datetime(2025, 7, 24, 23, 59, 59).isoformat("T") + "Z"
+    start_date = datetime(2025, 7, 31, 0, 0, 0).isoformat("T") + "Z"
+    end_date = datetime(2025, 8, 1, 23, 59, 59).isoformat("T") + "Z"
 
     get_tweets_by_hashtag(
         hashtag=os.getenv('HASHTAG'),
